@@ -1,71 +1,36 @@
 import streamlit as st
-from services.post_service import get_feed
-from services.reaction_service import like_post, add_comment, get_comments
+from services.post_service import upload_video, create_post
 
 
-@st.cache_data(ttl=30)
-def load_posts():
-
-    return get_feed()
-
-
-def render_feed():
-
-    st.title("🌐 Feed")
-
-    posts = load_posts()
+def create_post_ui():
 
     user = st.session_state.user
 
-    if not posts:
+    st.subheader("Create post")
 
-        st.info("No posts yet")
-        return
+    with st.form("post_form"):
 
-    for post in posts:
+        text = st.text_area("Caption")
 
-        with st.container():
+        video = st.file_uploader(
+            "Upload video",
+            type=["mp4","mov"]
+        )
 
-            st.subheader(post["profiles"]["username"])
+        if st.form_submit_button("Post"):
 
-            st.write(post["text"])
+            media_path = None
 
-            if post["media_path"]:
+            if video:
 
-                if post["media_path"].endswith(".mp4"):
-                    st.video(post["media_path"])
-                else:
-                    st.image(post["media_path"])
+                if video.size > 100 * 1024 * 1024:
 
-            st.write(
-                f"❤️ {post['like_count']}   💬 {post['comment_count']}"
-            )
+                    st.error("Max 100MB")
 
-            col1, col2 = st.columns(2)
+                    return
 
-            with col1:
+                media_path = upload_video(user.id, video)
 
-                if st.button("❤️ Like", key=f"like_{post['id']}"):
+            create_post(user.id, text, media_path)
 
-                    if like_post(post["id"], user.id):
-                        st.success("Liked")
-
-            with col2:
-
-                with st.expander("Comments"):
-
-                    comments = get_comments(post["id"])
-
-                    for c in comments:
-
-                        st.write(
-                            f"**{c['profiles']['username']}**: {c['text']}"
-                        )
-
-                    with st.form(f"comment_{post['id']}"):
-
-                        text = st.text_input("Write comment")
-
-                        if st.form_submit_button("Send"):
-
-                            add_comment(post["id"], user.id, text)
+            st.success("Post created")
