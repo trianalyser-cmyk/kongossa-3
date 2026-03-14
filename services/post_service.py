@@ -1,32 +1,17 @@
-import uuid
 from core.supabase_client import supabase
-from datetime import datetime
+from core.engine import TTUEngine
 
+def get_feed_augmented(limit=20):
+    # On ajuste la limite selon le flux informationnel calculé
+    flow = TTUEngine.compute_flow()
+    adjusted_limit = int(limit * flow)
+    
+    # On ne requête que si le système n'est pas en surchauffe dissipative
+    if flow < 0.2:
+        return [] # Protection contre le crash (Loi de Dissipation)
 
-def upload_video(user_id, file):
-
-    ext = file.name.split(".")[-1]
-
-    filename = f"posts/{user_id}/{uuid.uuid4()}.{ext}"
-
-    supabase.storage.from_("media").upload(
-        filename,
-        file.getvalue(),
-        {"content-type": f"video/{ext}"}
-    )
-
-    return filename
-
-
-def create_post(user_id, text, media_path=None):
-
-    supabase.table("posts").insert({
-
-        "user_id": user_id,
-        "text": text,
-        "media_path": media_path,
-        "created_at": datetime.utcnow().isoformat(),
-        "like_count": 0,
-        "comment_count": 0
-
-    }).execute()
+    res = supabase.table("posts").select(
+        "id, text, media_path, created_at, like_count, comment_count, profiles(username, profile_pic)"
+    ).order("created_at", desc=True).limit(adjusted_limit).execute()
+    
+    return res.data
