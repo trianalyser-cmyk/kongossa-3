@@ -15,7 +15,7 @@ def render_feed():
 
     posts = load_posts()
 
-    user = st.session_state["user"]
+    user = st.session_state.user
 
     if not posts:
 
