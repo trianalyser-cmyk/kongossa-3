@@ -1,5 +1,23 @@
 import streamlit as st
 from services.post_service import get_feed
+from core.supabase_client import supabase
+
+
+def get_media_url(path):
+
+    try:
+
+        res = supabase.storage.from_("media").create_signed_url(
+            path,
+            3600
+        )
+
+        return res["signedURL"]
+
+    except:
+
+        return None
+
 
 def render_toktok():
 
@@ -12,6 +30,7 @@ def render_toktok():
     posts = get_feed(20)
 
     if not posts:
+
         st.info("No videos")
         return
 
@@ -20,7 +39,12 @@ def render_toktok():
     st.subheader(post["profiles"]["username"])
 
     if post["media_path"]:
-        st.video(post["media_path"])
+
+        url = get_media_url(post["media_path"])
+
+        if url:
+
+            st.video(url)
 
     col1, col2, col3 = st.columns([1,4,1])
 
