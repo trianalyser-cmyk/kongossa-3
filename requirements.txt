@@ -1,5 +1,0 @@
-streamlit
-supabase
-cryptography
-psutil
-pandas
