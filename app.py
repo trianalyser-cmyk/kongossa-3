@@ -304,6 +304,25 @@ if "user" not in st.session_state:
 user = st.session_state["user"]
 
 # =====================================================
+# DÉTECTION DE LA REDIRECTION APRÈS CONFIRMATION MAIL
+# =====================================================
+# Streamlit permet de lire les paramètres présents dans l'URL de la barre de recherche
+url_params = st.query_params
+
+# Si Supabase nous renvoie un jeton d'accès dans l'URL (par exemple après un clic mail)
+if "access_token" in url_params and "user" not in st.session_state:
+    try:
+        # On récupère la session Supabase active grâce aux paramètres de l'URL
+        session = supabase.auth.get_session()
+        if session:
+            st.session_state["user"] = session.user
+            # Optionnel : on nettoie l'URL pour faire propre
+            st.query_params.clear()
+            st.rerun() # On force Streamlit à recharger la page pour afficher le Feed !
+    except Exception as e:
+        logger.error(f"Erreur lors de la récupération de la session URL: {e}")
+
+# =====================================================
 # PROFIL UTILISATEUR
 # =====================================================
 @st.cache_data(ttl=60)
